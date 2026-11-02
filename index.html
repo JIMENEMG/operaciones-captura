@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operaciones - Captura | Portal TI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PapaParse para procesar el CSV de Google Sheets -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    .rotate-180 { transform: rotate(180deg); }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800">
+
+  <div class="flex h-screen overflow-hidden">
+    
+    <!-- COLUMNA LATERAL MULTINIVEL -->
+    <aside class="w-80 bg-gray-900 text-gray-200 flex flex-col shadow-xl border-r border-gray-800">
+      
+      <!-- Encabezado Sidebar -->
+      <div class="p-5 border-b border-gray-800 flex items-center space-x-3">
+        <svg class="w-7 h-7 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-4v-3m-6 3h2m6 0h1m-4-10v4h4V4h-4zm-8 10v4h4v-4H4zm0-10v4h4V4H4z"/>
+        </svg>
+        <div>
+          <h1 class="font-bold text-lg leading-tight text-white">Operaciones - Captura</h1>
+          <p class="text-xs text-gray-400">Portal de Perfiles TI</p>
+        </div>
+      </div>
+
+      <!-- Buscador Global -->
+      <div class="p-4 border-b border-gray-800">
+        <div class="relative">
+          <input type="text" id="searchInput" onkeyup="filterProfilesBySearch()" placeholder="Buscar cliente, sede, modelo..." class="w-full bg-gray-800 text-xs text-white pl-8 pr-3 py-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- ÁRBOL DE NAVEGACIÓN -->
+      <nav id="sidebarNav" class="flex-1 overflow-y-auto p-4 space-y-2 text-sm">
+        <button onclick="showAllProfiles()" class="w-full flex items-center space-x-2 text-left font-semibold text-blue-400 hover:bg-gray-800 p-2 rounded transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+          </svg>
+          <span>Mostrar Todos los Perfiles</span>
+        </button>
+
+        <div class="border-t border-gray-800 my-2"></div>
+        
+        <!-- Clientes, Sub-carpetas y Modelos cargados dinámicamente -->
+        <div id="clientesContainer" class="space-y-2"></div>
+      </nav>
+
+      <div class="p-4 border-t border-gray-800 text-xs text-gray-500 text-center">
+        Soporte TI Zebra
+      </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="flex-1 bg-gray-100 overflow-y-auto p-6 md:p-8">
+      <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 id="currentFilterTitle" class="text-xl font-bold text-gray-800">Todos los Perfiles Registrados</h2>
+            <p class="text-xs text-gray-500">Navega por las carpetas en la columna lateral para filtrar perfiles</p>
+          </div>
+          <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-semibold border border-blue-200">
+            StageNow QR Scanner
+          </span>
+        </div>
+
+        <!-- GRILLA DE TARJETAS -->
+        <div id="profilesGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Enlace público CSV de tu Google Sheets
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTk7YGRsakUc1KwxUn867SSGdiVILgQPMumYKiu_VZ9kz3EXhqGhWbsNp3M-5Uoe1lgz5nJZQB04VG1/pub?gid=0&single=true&output=csv';
+
+    let globalData = [];
+
+    function loadGoogleSheetsData() {
+      Papa.parse(SHEET_CSV_URL, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          processRawData(results.data);
+          renderSidebar();
+          renderProfiles();
+        },
+        error: function(err) {
+          console.error("Error al cargar Google Sheets:", err);
+        }
+      });
+    }
+
+    // Agrupa filas por Cliente -> Subcarpeta -> Modelos
+    function processRawData(rows) {
+      const mapClientes = {};
+
+      rows.forEach(row => {
+        const cId = (row.cliente_id || '').trim();
+        const cNombre = (row.cliente_nombre || '').trim();
+        const subId = (row.subcarpeta_id || 'GENERAL').trim();
+        const subNombre = (row.subcarpeta_nombre || 'General').trim();
+
+        if (!cId) return;
+
+        if (!mapClientes[cId]) {
+          mapClientes[cId] = {
+            id: cId,
+            nombre: cNombre,
+            subcarpetas: {}
+          };
+        }
+
+        if (!mapClientes[cId].subcarpetas[subId]) {
+          mapClientes[cId].subcarpetas[subId] = {
+            id: subId,
+            nombre: subNombre,
+            modelos: []
+          };
+        }
+
+        mapClientes[cId].subcarpetas[subId].modelos.push({
+          id_modelo: (row.modelo_id || '').trim(),
+          nombre_modelo: (row.modelo_nombre || '').trim(),
+          tipo_badge: (row.badge_texto || 'Staging').trim(),
+          color_badge: (row.badge_color || 'bg-blue-100 text-blue-800').trim(),
+          android: (row.android || '').trim(),
+          mx: (row.mx || '').trim(),
+          build: (row.build || '').trim(),
+          wifi: (row.wifi || '').trim(),
+          apps: (row.apps || '').trim(),
+          fecha: (row.fecha || '').trim(),
+          qr_url: (row.qr_url || '').trim()
+        });
+      });
+
+      globalData = Object.values(mapClientes);
+    }
+
+    // Renderiza el árbol en la barra lateral
+    function renderSidebar() {
+      const container = document.getElementById('clientesContainer');
+      container.innerHTML = '';
+
+      globalData.forEach(cliente => {
+        const clienteFolderId = `folder-cliente-${cliente.id}`;
+        const clienteArrowId = `arrow-${clienteFolderId}`;
+
+        let subcarpetasHTML = '';
+
+        Object.values(cliente.subcarpetas).forEach(sub => {
+          const subFolderId = `folder-sub-${cliente.id}-${sub.id}`;
+          const subArrowId = `arrow-${subFolderId}`;
+
+          let modelosHTML = sub.modelos.map(m => `
+            <button onclick="filterByModel('${cliente.id}', '${sub.id}', '${m.id_modelo}')" class="w-full flex items-center space-x-2 text-xs text-gray-400 hover:text-blue-300 p-1.5 rounded hover:bg-gray-800 transition">
+              <svg class="w-3.5 h-3.5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+              <span>${m.nombre_modelo}</span>
+            </button>
+          `).join('');
+
+          subcarpetasHTML += `
+            <div class="subcarpeta-group">
+              <button onclick="toggleFolder('${subFolderId}')" class="w-full flex items-center justify-between text-xs font-medium text-gray-300 hover:text-white p-2 rounded hover:bg-gray-800 transition">
+                <span class="flex items-center space-x-2 truncate">
+                  <svg class="w-3.5 h-3.5 text-amber-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                  </svg>
+                  <span class="truncate">${sub.nombre}</span>
+                </span>
+                <svg id="${subArrowId}" class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              <div id="${subFolderId}" class="ml-3 space-y-1 mt-1 hidden border-l border-gray-700 pl-2">
+                ${modelosHTML}
+              </div>
+            </div>
+          `;
+        });
+
+        const clienteHTML = `
+          <div class="cliente-group">
+            <button onclick="toggleFolder('${clienteFolderId}')" class="w-full flex items-center justify-between font-semibold text-gray-200 hover:text-white p-2.5 rounded hover:bg-gray-800 transition">
+              <span class="flex items-center space-x-2 truncate">
+                <svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                </svg>
+                <span class="truncate">${cliente.nombre}</span>
+              </span>
+              <svg id="${clienteArrowId}" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            <div id="${clienteFolderId}" class="ml-3 space-y-1 mt-1 hidden border-l-2 border-gray-700 pl-2">
+              ${subcarpetasHTML}
+            </div>
+          </div>
+        `;
+        container.innerHTML += clienteHTML;
+      });
+    }
+
+    // Renderiza las fichas y los códigos QR
+    function renderProfiles() {
+      const grid = document.getElementById('profilesGrid');
+      grid.innerHTML = '';
+
+      globalData.forEach(cliente => {
+        Object.values(cliente.subcarpetas).forEach(sub => {
+          sub.modelos.forEach(m => {
+            const qrFallback = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=StageNow-${cliente.id}-${sub.id}-${m.id_modelo}`;
+            
+            const cardHTML = `
+              <div class="profile-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition" 
+                   data-client="${cliente.id}" data-sub="${sub.id}" data-model="${m.id_modelo}">
+                <div class="flex justify-between items-start mb-3 border-b border-gray-100 pb-3">
+                  <div>
+                    <span class="text-xs font-semibold text-blue-600 uppercase tracking-wide">${cliente.nombre} > ${sub.nombre}</span>
+                    <h3 class="text-lg font-bold text-gray-800">${m.nombre_modelo}</h3>
+                  </div>
+                  <span class="${m.color_badge} text-xs px-2.5 py-0.5 rounded-full font-medium">${m.tipo_badge}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <div><strong>Android:</strong> ${m.android}</div>
+                  <div><strong>Versión MX:</strong> ${m.mx}</div>
+                  <div class="col-span-2"><strong>Build:</strong> ${m.build}</div>
+                  <div class="col-span-2"><strong>Red Wi-Fi:</strong> ${m.wifi}</div>
+                  <div class="col-span-2"><strong>Apps:</strong> ${m.apps}</div>
+                  <div class="col-span-2"><strong>Creado:</strong> ${m.fecha}</div>
+                </div>
+                <div class="text-center bg-gray-50 p-4 rounded-lg border border-dashed border-gray-300">
+                  <img src="${m.qr_url}" onerror="this.src='${qrFallback}'" alt="QR StageNow" class="mx-auto mb-2 border-2 border-white shadow-sm rounded bg-white w-44 h-44 object-contain">
+                  <span class="text-xs text-gray-500 block">Escanear con StageNow en el dispositivo</span>
+                </div>
+              </div>
+            `;
+            grid.innerHTML += cardHTML;
+          });
+        });
+      });
+    }
+
+    function toggleFolder(folderId) {
+      const folder = document.getElementById(folderId);
+      const arrow = document.getElementById(`arrow-${folderId}`);
+      if (folder.classList.contains('hidden')) {
+        folder.classList.remove('hidden');
+        if (arrow) arrow.classList.add('rotate-180');
+      } else {
+        folder.classList.add('hidden');
+        if (arrow) arrow.classList.remove('rotate-180');
+      }
+    }
+
+    function filterByModel(clientCode, subCode, modelCode) {
+      const cards = document.querySelectorAll('.profile-card');
+      const title = document.getElementById('currentFilterTitle');
+      title.innerText = `Filtro: ${clientCode} > ${subCode} > ${modelCode}`;
+      cards.forEach(card => {
+        const c = card.getAttribute('data-client');
+        const s = card.getAttribute('data-sub');
+        const m = card.getAttribute('data-model');
+        card.style.display = (c === clientCode && s === subCode && m === modelCode) ? '' : 'none';
+      });
+    }
+
+    function showAllProfiles() {
+      const cards = document.querySelectorAll('.profile-card');
+      const title = document.getElementById('currentFilterTitle');
+      title.innerText = 'Todos los Perfiles Registrados';
+      cards.forEach(card => card.style.display = '');
+    }
+
+    function filterProfilesBySearch() {
+      const input = document.getElementById('searchInput').value.toLowerCase();
+      const cards = document.querySelectorAll('.profile-card');
+      cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        card.style.display = text.includes(input) ? '' : 'none';
+      });
+    }
+
+    window.onload = loadGoogleSheetsData;
+  </script>
+</body>
+</html>
