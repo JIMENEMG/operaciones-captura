@@ -82,7 +82,9 @@
     let globalData = [];
 
     function loadGoogleSheetsData() {
-      Papa.parse(SHEET_CSV_URL, {
+      // Fuerza a recargar sin caché del CSV
+      const timestampUrl = SHEET_CSV_URL + '&t=' + new Date().getTime();
+      Papa.parse(timestampUrl, {
         download: true,
         header: true,
         skipEmptyLines: true,
@@ -127,7 +129,8 @@
           wifi: (row.wifi || '').trim(),
           apps: (row.apps || '').trim(),
           fecha: (row.fecha || '').trim(),
-          foto_url: (row.foto_url || '').trim(),
+          // Lee foto_url de la columna O o qr_url como respaldo
+          foto_url: (row.foto_url || row.qr_url || '').trim(),
           pdf_url: (row.pdf_url || '').trim()
         });
       });
@@ -206,11 +209,9 @@
       globalData.forEach(cliente => {
         Object.values(cliente.subcarpetas).forEach(sub => {
           sub.modelos.forEach(m => {
-            // Imagen por defecto si la casilla foto_url está vacía
             const defaultImg = "https://www.zebra.com/content/dam/zebra_new_ia/en-us/solutions-verticals/product-card/mobile-computers/handheld/tc27-card.png";
-            const imgSrc = m.foto_url && m.foto_url.startsWith('http') ? m.foto_url : defaultImg;
+            const imgSrc = (m.foto_url && m.foto_url.startsWith('http')) ? m.foto_url : defaultImg;
             
-            // Si no hay PDF cargado, deshabilita visualmente el botón o pone una alerta sutil
             const hasPdf = m.pdf_url && m.pdf_url.startsWith('http');
             const pdfButtonHTML = hasPdf ? `
               <a href="${m.pdf_url}" target="_blank" class="w-full inline-flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-4 rounded-lg transition shadow-sm">
@@ -235,7 +236,7 @@
                     <span class="${m.color_badge} text-xs px-2.5 py-0.5 rounded-full font-medium">${m.tipo_badge}</span>
                   </div>
 
-                  <!-- Imagen del Modelo de Equipo -->
+                  <!-- Imagen del Modelo -->
                   <div class="text-center bg-gray-50 p-3 rounded-lg border border-gray-100 mb-4 flex justify-center items-center h-48">
                     <img src="${imgSrc}" onerror="this.src='${defaultImg}'" alt="${m.nombre_modelo}" class="max-h-44 object-contain">
                   </div>
@@ -250,7 +251,6 @@
                   </div>
                 </div>
 
-                <!-- Botón de apertura del PDF -->
                 <div class="text-center pt-2">
                   ${pdfButtonHTML}
                 </div>
