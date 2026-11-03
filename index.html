@@ -251,7 +251,7 @@
             const defaultImg = "https://www.zebra.com/content/dam/zebra_new_ia/en-us/solutions-verticals/product-card/mobile-computers/handheld/tc27-card.png";
             const imgSrc = (m.foto_url && m.foto_url.startsWith('http')) ? m.foto_url : defaultImg;
             
-            // Botón PDF StageNow (ahora con flex-1 para compartir el ancho)
+            // Botón PDF StageNow
             const hasPdf = m.pdf_url && m.pdf_url.startsWith('http');
             const pdfButtonHTML = hasPdf ? `
               <a href="${m.pdf_url}" target="_blank" class="flex-1 w-full inline-flex items-center justify-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-2 rounded-lg transition shadow-sm">
@@ -264,11 +264,11 @@
               </button>
             `;
 
-            // Botón Carpeta de Archivos (también con flex-1)
+            // Botón Carpeta de Archivos (Ahora Azul)
             const hasArchivos = m.archivos_url && m.archivos_url.startsWith('http');
             const archivosButtonHTML = hasArchivos ? `
-              <a href="${m.archivos_url}" target="_blank" class="flex-1 w-full inline-flex items-center justify-center space-x-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold py-2.5 px-2 rounded-lg transition shadow-sm border border-gray-300">
-                <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+              <a href="${m.archivos_url}" target="_blank" class="flex-1 w-full inline-flex items-center justify-center space-x-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2.5 px-2 rounded-lg transition shadow-sm border border-blue-600">
+                <svg class="w-4 h-4 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
                 <span class="truncate">Archivos</span>
               </a>
             ` : '';
@@ -285,7 +285,6 @@
                     <span class="${m.color_badge} text-xs px-2.5 py-1 rounded-md font-bold shadow-sm">${m.tipo_badge}</span>
                   </div>
 
-                  <!-- Imagen del Modelo -->
                   <div class="text-center bg-gray-50/50 p-3 rounded-lg border border-gray-100 mb-4 flex justify-center items-center h-48">
                     <img src="${imgSrc}" onerror="this.src='${defaultImg}'" alt="${m.nombre_modelo}" class="max-h-44 drop-shadow-sm object-contain">
                   </div>
@@ -299,7 +298,6 @@
                   </div>
                 </div>
 
-                <!-- Botones de Acción uno al lado del otro -->
                 <div class="flex flex-row space-x-2 mt-2 w-full">
                   ${pdfButtonHTML}
                   ${archivosButtonHTML}
