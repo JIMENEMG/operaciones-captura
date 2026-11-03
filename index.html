@@ -14,10 +14,13 @@
 
   <div class="flex h-screen overflow-hidden relative">
     
+    <!-- SOMBRA OSCURA MÓVIL -->
     <div id="sidebarOverlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
+    <!-- COLUMNA LATERAL COMPLETA CON CARPETAS -->
     <aside id="sidebar" class="w-80 bg-gray-900 text-gray-200 flex flex-col shadow-xl border-r border-gray-800 absolute z-40 h-full transform -translate-x-full transition-transform duration-300 ease-in-out md:relative md:translate-x-0">
       
+      <!-- ENCABEZADO SIDEBAR -->
       <div class="p-5 border-b border-gray-800 flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <svg class="w-7 h-7 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,6 +36,7 @@
         </button>
       </div>
 
+      <!-- BUSCADOR GLOBAL -->
       <div class="p-4 border-b border-gray-800">
         <div class="relative">
           <input type="text" id="searchInput" onkeyup="filterProfilesBySearch()" placeholder="Buscar cliente, sede, modelo..." class="w-full bg-gray-800 text-xs text-white pl-8 pr-3 py-2 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -42,6 +46,7 @@
         </div>
       </div>
 
+      <!-- ÁRBOL DE CARPETAS Y SUBCARPETAS -->
       <nav id="sidebarNav" class="flex-1 overflow-y-auto p-4 space-y-2 text-sm">
         <button onclick="showAllProfiles()" class="w-full flex items-center space-x-2 text-left font-semibold text-blue-400 hover:bg-gray-800 p-2 rounded transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,8 +64,10 @@
       </div>
     </aside>
 
+    <!-- ÁREA PRINCIPAL -->
     <main class="flex-1 bg-gray-100 flex flex-col h-screen overflow-hidden">
       
+      <!-- HEADER MÓVIL -->
       <div class="md:hidden flex items-center justify-between bg-gray-900 text-white p-4 shadow-md z-20">
         <div class="flex items-center space-x-2">
           <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,6 +80,7 @@
         </button>
       </div>
 
+      <!-- CONTENIDO DE LAS TARJETAS -->
       <div class="flex-1 overflow-y-auto p-4 md:p-8">
         <div class="max-w-5xl mx-auto">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-3 md:space-y-0">
@@ -85,6 +93,7 @@
             </span>
           </div>
 
+          <!-- GRILLA DE TARJETAS -->
           <div id="profilesGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
         </div>
       </div>
@@ -99,14 +108,14 @@
     function toggleMobileMenu() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebarOverlay');
-      sidebar.classList.toggle('-translate-x-full');
-      overlay.classList.toggle('hidden');
+      if (sidebar) sidebar.classList.toggle('-translate-x-full');
+      if (overlay) overlay.classList.toggle('hidden');
     }
 
     function closeMobileMenuIfNeeded() {
       if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebar');
-        if (!sidebar.classList.contains('-translate-x-full')) {
+        if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
           toggleMobileMenu();
         }
       }
@@ -170,15 +179,18 @@
 
     function renderSidebar() {
       const container = document.getElementById('clientesContainer');
+      if (!container) return;
       container.innerHTML = '';
 
       globalData.forEach(cliente => {
-        const clienteFolderId = `folder-cliente-${cliente.id}`;
+        const safeClienteId = cliente.id.replace(/[^a-zA-Z0-9_-]/g, '');
+        const clienteFolderId = `folder-cliente-${safeClienteId}`;
         const clienteArrowId = `arrow-${clienteFolderId}`;
         let subcarpetasHTML = '';
 
         Object.values(cliente.subcarpetas).forEach(sub => {
-          const subFolderId = `folder-sub-${cliente.id}-${sub.id}`;
+          const safeSubId = sub.id.replace(/[^a-zA-Z0-9_-]/g, '');
+          const subFolderId = `folder-sub-${safeClienteId}-${safeSubId}`;
           const subArrowId = `arrow-${subFolderId}`;
 
           let modelosHTML = sub.modelos.map(m => `
@@ -234,6 +246,7 @@
 
     function renderProfiles() {
       const grid = document.getElementById('profilesGrid');
+      if (!grid) return;
       grid.innerHTML = '';
 
       globalData.forEach(cliente => {
@@ -302,19 +315,14 @@
     function toggleFolder(folderId) {
       const folder = document.getElementById(folderId);
       const arrow = document.getElementById(`arrow-${folderId}`);
-      if (folder.classList.contains('hidden')) {
-        folder.classList.remove('hidden');
-        if (arrow) arrow.classList.add('rotate-180');
-      } else {
-        folder.classList.add('hidden');
-        if (arrow) arrow.classList.remove('rotate-180');
-      }
+      if (folder) folder.classList.toggle('hidden');
+      if (arrow) arrow.classList.toggle('rotate-180');
     }
 
     function filterByModel(clientCode, subCode, modelCode) {
       const cards = document.querySelectorAll('.profile-card');
       const title = document.getElementById('currentFilterTitle');
-      title.innerText = `Filtro: ${clientCode} > ${subCode} > ${modelCode}`;
+      if (title) title.innerText = `Filtro: ${clientCode} > ${subCode} > ${modelCode}`;
       cards.forEach(card => {
         const c = card.getAttribute('data-client');
         const s = card.getAttribute('data-sub');
@@ -327,7 +335,7 @@
     function showAllProfiles() {
       const cards = document.querySelectorAll('.profile-card');
       const title = document.getElementById('currentFilterTitle');
-      title.innerText = 'Todos los Perfiles Registrados';
+      if (title) title.innerText = 'Todos los Perfiles Registrados';
       cards.forEach(card => card.style.display = '');
       closeMobileMenuIfNeeded();
     }
