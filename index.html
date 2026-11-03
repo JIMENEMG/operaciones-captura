@@ -14,7 +14,7 @@
 
   <div class="flex h-screen overflow-hidden relative">
     
-    <!-- FONDO OSCURO PARA MÓVILES (Se activa al abrir el menú) -->
+    <!-- FONDO OSCURO PARA MÓVILES -->
     <div id="sidebarOverlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
     <!-- COLUMNA LATERAL (Menú) -->
@@ -31,7 +31,6 @@
             <p class="text-xs text-gray-400">Portal de Perfiles TI</p>
           </div>
         </div>
-        <!-- Botón cerrar menú (Solo visible en móviles) -->
         <button onclick="toggleMobileMenu()" class="md:hidden text-gray-400 hover:text-white focus:outline-none">
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -61,14 +60,14 @@
       </nav>
 
       <div class="p-4 border-t border-gray-800 text-xs text-gray-500 text-center">
-        Soporte Captura e Impresion
+        Soporte TI Zebra
       </div>
     </aside>
 
     <!-- ÁREA PRINCIPAL -->
     <main class="flex-1 bg-gray-100 flex flex-col h-screen overflow-hidden">
       
-      <!-- HEADER MÓVIL (Solo se ve en teléfonos) -->
+      <!-- HEADER MÓVIL -->
       <div class="md:hidden flex items-center justify-between bg-gray-900 text-white p-4 shadow-md z-20">
         <div class="flex items-center space-x-2">
           <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,7 +105,6 @@
 
     let globalData = [];
 
-    // Lógica para abrir/cerrar el menú en celulares
     function toggleMobileMenu() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebarOverlay');
@@ -114,7 +112,6 @@
       overlay.classList.toggle('hidden');
     }
 
-    // Oculta el menú automáticamente al tocar una opción en el celular
     function closeMobileMenuIfNeeded() {
       if (window.innerWidth < 768) {
         const sidebar = document.getElementById('sidebar');
@@ -172,7 +169,8 @@
           apps: (row.apps || '').trim(),
           fecha: (row.fecha || '').trim(),
           foto_url: (row.foto_url || '').trim(),
-          pdf_url: (row.pdf_url || '').trim()
+          pdf_url: (row.pdf_url || '').trim(),
+          archivos_url: (row.archivos_url || '').trim() 
         });
       });
 
@@ -253,17 +251,27 @@
             const defaultImg = "https://www.zebra.com/content/dam/zebra_new_ia/en-us/solutions-verticals/product-card/mobile-computers/handheld/tc27-card.png";
             const imgSrc = (m.foto_url && m.foto_url.startsWith('http')) ? m.foto_url : defaultImg;
             
+            // Botón PDF StageNow (ahora con flex-1 para compartir el ancho)
             const hasPdf = m.pdf_url && m.pdf_url.startsWith('http');
             const pdfButtonHTML = hasPdf ? `
-              <a href="${m.pdf_url}" target="_blank" class="w-full inline-flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-3 px-4 rounded-lg transition shadow-md">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Abrir PDF StageNow</span>
+              <a href="${m.pdf_url}" target="_blank" class="flex-1 w-full inline-flex items-center justify-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-2 rounded-lg transition shadow-sm">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span class="truncate">PDF StageNow</span>
               </a>
             ` : `
-              <button disabled class="w-full inline-flex items-center justify-center space-x-2 bg-gray-200 text-gray-400 text-sm font-bold py-3 px-4 rounded-lg cursor-not-allowed">
-                <span>PDF StageNow no adjunto</span>
+              <button disabled class="flex-1 w-full inline-flex items-center justify-center space-x-1.5 bg-gray-200 text-gray-400 text-xs font-bold py-2.5 px-2 rounded-lg cursor-not-allowed">
+                <span class="truncate">Sin PDF</span>
               </button>
             `;
+
+            // Botón Carpeta de Archivos (también con flex-1)
+            const hasArchivos = m.archivos_url && m.archivos_url.startsWith('http');
+            const archivosButtonHTML = hasArchivos ? `
+              <a href="${m.archivos_url}" target="_blank" class="flex-1 w-full inline-flex items-center justify-center space-x-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold py-2.5 px-2 rounded-lg transition shadow-sm border border-gray-300">
+                <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+                <span class="truncate">Archivos</span>
+              </a>
+            ` : '';
 
             const cardHTML = `
               <div class="profile-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between" 
@@ -291,8 +299,10 @@
                   </div>
                 </div>
 
-                <div class="text-center mt-2">
+                <!-- Botones de Acción uno al lado del otro -->
+                <div class="flex flex-row space-x-2 mt-2 w-full">
                   ${pdfButtonHTML}
+                  ${archivosButtonHTML}
                 </div>
               </div>
             `;
@@ -324,7 +334,6 @@
         const m = card.getAttribute('data-model');
         card.style.display = (c === clientCode && s === subCode && m === modelCode) ? '' : 'none';
       });
-      // Cierra el menú al seleccionar una opción en celular
       closeMobileMenuIfNeeded();
     }
 
