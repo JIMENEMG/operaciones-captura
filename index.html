@@ -246,7 +246,8 @@
           fecha: (row.fecha || '').trim(),
           foto_url: (row.foto_url || '').trim(),
           pdf_url: (row.pdf_url || '').trim(),
-          archivos_url: (row.archivos_url || '').trim() 
+          archivos_url: (row.archivos_url || '').trim(),
+          manual_url: (row.manual_url || '').trim() 
         });
       });
       globalData = Object.values(mapClientes);
@@ -350,6 +351,14 @@
               </a>
             ` : '';
 
+            const hasManual = m.manual_url && m.manual_url.startsWith('http');
+            const manualButtonHTML = hasManual ? `
+              <a href="${m.manual_url}" target="_blank" class="flex-1 w-full inline-flex items-center justify-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-2 rounded-lg transition shadow-sm">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                <span class="truncate">Manual</span>
+              </a>
+            ` : '';
+
             const cardHTML = `
               <div class="profile-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between" 
                    data-client="${cliente.id}" data-sub="${sub.id}" data-model="${m.id_modelo}">
@@ -382,6 +391,7 @@
                 <div class="flex flex-row space-x-2 mt-2 w-full">
                   ${pdfButtonHTML}
                   ${archivosButtonHTML}
+                  ${manualButtonHTML}
                 </div>
               </div>
             `;
